@@ -1,0 +1,37 @@
+{% extends 'forum/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1>All Questions</h1>
+
+<form method="GET">
+    <fieldset class="form-group">
+        {{ filter.form|crispy }}
+        <script>
+          var form_fields = document.getElementsByTagName('input')
+          form_fields[0].placeholder='Search a question here!';
+        </script>
+      	<button class="btn btn-outline-success" type="submit"><i class="fas fa-search"></i> Search</button>
+      	<a class="btn btn-outline-info" href="{% url 'home' %}"><i class="fas fa-remove-format"></i> Clear</a>
+    </fieldset>
+ </form>
+
+{% if questions %}
+	{% for question in questions %}
+		<article class="media content-section md-5">
+			<img class="rounded-circle article-img" src="{{ question.username.profile.image.url }}">
+			<div class="media-body">
+				<div class="article-metadata">
+					<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
+					<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+				</div>
+				<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
+				<p class="article-content">{{ question.desc }}</p>
+				<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
+			</div>
+		</article>
+	{% endfor %}
+{% else %}
+	<h5>No questions yet!</h5><br>
+{% endif %}
+
+{% endblock content %}

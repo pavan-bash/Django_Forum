@@ -1,0 +1,40 @@
+{% extends 'forum/base.html' %}
+{% block content %}
+<h1>Community Detail</h1>
+
+<form method="POST">
+	{% csrf_token %}
+	<article class="media content-section md-5">
+		<div class="media-body">
+			<div class="article-metadata">
+				<small>Created by:&nbsp;&nbsp;</small>{{ community.username }}&nbsp;&nbsp;
+				<small class="text-muted">{{ community.date_created|date:"F d, Y" }}</small>
+			</div>
+			<h2 class="article-title">{{ community.name }}</h2>
+			<p class="article-content">{{ community.desc }}</p>
+			<button class="btn btn-outline-info" type="submit">Join Community</button>
+		</div>
+	</article>
+</form>
+
+<a class="btn btn-lg btn-outline-info mb-4" href="{% url 'login_question' community.id %}">Ask a question</a>
+
+{% if questions %}
+	{% for question in questions %}
+		<article class="media content-section md-5">
+			<img class="rounded-circle article-img" src="{{ question.username.profile.image.url }}">
+			<div class="media-body">
+				<div class="article-metadata">
+					<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
+					<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+				</div>
+				<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
+				<p class="article-content">{{ question.desc }}</p>
+			</div>
+		</article>
+	{% endfor %}
+{% else %}
+	<h5>No questions yet!</h5><br>
+{% endif %}
+
+{% endblock content %}

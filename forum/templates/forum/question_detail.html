@@ -1,0 +1,53 @@
+{% extends 'forum/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1>Question</h1>
+<article class="media content-section md-5">
+	<img class="rounded-circle article-img" src="{{ question.username.profile.image.url }}">
+	<div class="media-body">
+		<div class="article-metadata">
+			<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
+			<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+		</div>
+		<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
+		<p class="article-content">{{ question.desc }}</p>
+		<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
+	</div>
+</article>
+
+<div class="content-section">
+	<form method="POST">
+		{% csrf_token %}
+		<fieldset class="form-group">
+			<legend class="boreder-bottom mb-4">Leave an answer</legend>
+				{{ form|crispy }}	
+		</fieldset>
+		<div class="form-group">
+			<input class="btn btn-outline-info" type="submit" value="Post">
+		</div>
+	</form>
+</div>
+
+	{% if answers %}
+		{% for ran in answers %}
+		{% for answer in ran %}
+			<article class="media content-section">
+				<img class="rounded-circle article-img" src="{{ answer.username.profile.image.url }}">
+				<div class="media-body">
+					<div class="article-metadata">
+						<p class="mr-4">{{ answer.username }}
+						<small class="text-muted">
+							{{ answer.date_answered|date:"F d, Y" }}
+						</small></p>
+					</div>
+					<p class="article-content">{{ answer.desc|linebreaks }}</p>
+					<a href="{% url 'upvote' answer.id question.id %}"><i class="fas fa-thumbs-up"></i></a>  {{ vote|get_item:answer.id }}  <a href="{% url 'downvote' answer.id question.id %}"><i class="fas fa-thumbs-down"></i></a>
+				</div>
+			</article>
+		{% endfor %}
+		{% endfor %}
+	{% else %}
+		<h5>No answers yet!</h5><br>
+	{% endif %}
+
+{% endblock content %}

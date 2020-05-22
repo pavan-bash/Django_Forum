@@ -1,0 +1,24 @@
+{% extends 'forum/base.html' %}
+{% block content %}
+<h1>My Communities</h1>
+
+<div class="row">
+{% if joins %}
+	{% for join in joins %}
+		<article class="media content-section md-5 col-xl-5 col-lg-5 ml-5">
+			<div class="media-body">
+				<div class="article-metadata">
+					<small>Created by:&nbsp;&nbsp;</small>{{ join.communityname.username }}&nbsp;&nbsp;
+					<small class="text-muted">{{ join.communityname.date_created|date:"F d, Y" }}</small>
+				</div>
+				<a href="{% url 'community_detail' join.communityname.id %}"><h2 class="article-title">{{ join.communityname.name }}</h2></a>
+				<p class="article-content">{{ join.communityname.desc }}</p>
+			</div>
+		</article>
+	{% endfor %}
+{% else %}
+	<h5>No communities yet!</h5><br>
+{% endif %}
+</div>
+
+{% endblock content %}

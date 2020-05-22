@@ -1,0 +1,36 @@
+<header class="site-header">
+  <nav class="navbar navbar-expand-md navbar-dark bg-info fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand mr-4" href="{% url 'home' %}">Django Forum</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarToggle">
+        <ul class="navbar-nav mr-auto">
+          {% if user.is_authenticated %}
+            <li class="{% if title == 'Home' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home"></i> Home</a></li>
+            <li class="{% if title == 'Communities' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'community' %}"><i class="fas fa-users"></i> Communities</a></li>
+            <li class="{% if title == 'My Communities' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'my_communities' %}"><i class="fas fa-users"></i> My Communities</a></li>
+            <li class="{% if title == 'Popular' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'all_questions' %}"><i class="fas fa-fire-alt"></i> Popular</a></li>
+            <li class="{% if title == 'About' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'about' %}"><i class="fas fa-address-card"></i> About</a></li>
+          {% else %}
+            <li class="{% if title == 'Home' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home"></i> Home</a></li>
+            <li class="{% if title == 'Communities' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'community' %}"><i class="fas fa-users"></i> Communities</a></li>
+            <li class="{% if title == 'About' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'about' %}"><i class="fas fa-address-card"></i> About</a></li>
+          {% endif %}
+        </ul>
+        <!-- Navbar Right Side -->
+        <ul class="navbar-nav">
+          {% if user.is_authenticated %}
+            <!-- <img class="rounded-circle article-img" src="{{user.profile.image.url}}"> -->
+            <li class="{% if title == 'Profile' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'profile' %}">Profile <i class="fas fa-user-alt"></i></a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout <i class="fas fa-sign-out-alt"></i></a><li>
+          {% else %}
+            <li class="{% if title == None %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'login' %}">Login <i class="fas fa-sign-in-alt"></i></a></li>
+            <li class="{% if title == 'Register' %}active{% endif %} nav-item"><a class="nav-link" href="{% url 'register' %}">Register <i class="fas fa-user-plus"></i></a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
