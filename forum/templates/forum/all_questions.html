@@ -25,7 +25,7 @@
 					<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
 				</div>
 				<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
-				<p class="article-content">{{ question.desc }}</p>
+				<p class="article-content"><div class="content-markdown">{{ question.desc|truncatechars:50|safe }}</div></p>
 				<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
 			</div>
 		</article>

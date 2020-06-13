@@ -1,0 +1,11 @@
+{{ total_likes|get_item:answer.id }} like{{ total_likes|get_item:answer.id|pluralize }}
+{% if request.user.is_authenticated %}
+	<form method="POST">
+		{% csrf_token %}
+		{% if is_liked|get_item:answer.id %}
+			<button type="submit" id="like" name="answer_id" value="{{ answer.id }}" class="btn btn-sm btn-outline-info">Downvote</button>
+		{% else %}
+			<button type="submit" id="like" name="answer_id" value="{{ answer.id }}" class="btn btn-sm btn-outline-info">Upvote</button>
+		{% endif %}
+	</form>
+{% endif %}

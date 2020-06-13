@@ -5,9 +5,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from itertools import chain
-from .forms import CommunityForm, QuestionForm, AnswerForm
+from .forms import CommunityForm, QuestionForm, AnswerForm, ReportQForm, ReportAForm, ReplyForm
 from .filters import QuestionFilter, CommunityFilter
 from django.template.defaulttags import register
+from django.template.loader import render_to_string
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.db.models import Count
 
 @register.filter
 def get_item(dictionary, key):
@@ -52,18 +55,17 @@ def login_question(request, pk):
 
 def question_detail(request, pk):
 	question = Question.objects.get(id=pk)
-	answers = Answer.objects.filter(question=question)
-	votedict = {}
+	answers = Answer.objects.filter(question=question).annotate(count=Count('likes')).order_by('-count')
+	replydict = {}
+	is_liked = {}
+	total_likes = {}
 	for answer in answers:
-		upvotes = Upvote.objects.filter(answer=answer).count()
-		downvotes = Downvote.objects.filter(answer=answer).count()
-		votedict[answer.id] = upvotes-downvotes
-	no_of_answers = answers.count()
-	lst = sorted(votedict.items(), key=lambda x: x[1])
-	lst.reverse()
-	answers = list(Answer.objects.none())
-	for x in lst:
-		answers.append(Answer.objects.filter(id=x[0]))
+		replydict[answer.id] = ReplyAnswer.objects.filter(answer=answer)
+		is_liked[answer.id] = False
+		if answer.likes.filter(id=request.user.id).exists():
+			is_liked[answer.id] = True
+		total_likes[answer.id] = answer.total_likes()
+	
 	form = AnswerForm()
 	if request.method == 'POST':
 		if request.user.is_authenticated:
@@ -78,14 +80,59 @@ def question_detail(request, pk):
 			return redirect("/login/?next=/question/"+pk)
 	context = {
 		'title': 'Home',
-		'no_of_answers': no_of_answers,
 		'question': question,
 		'answers': answers,
 		'form': form,
-		'vote': votedict,
+		'replydict': replydict,
+		'is_liked': is_liked,
+		'total_likes': total_likes,
 		'get_item': get_item,
+		'tags': question.tags.all(),
 	}
 	return render(request, 'forum/question_detail.html', context)
+
+def question_detail_reply(request, pk, pk1):
+	question = Question.objects.get(id=pk)
+	answers = Answer.objects.filter(question=question).annotate(count=Count('likes')).order_by('-count')
+	replydict = {}
+	is_liked = {}
+	total_likes = {}
+	for answer in answers:
+		replydict[answer.id] = ReplyAnswer.objects.filter(answer=answer)
+		is_liked[answer.id] = False
+		if answer.likes.filter(id=request.user.id).exists():
+			is_liked[answer.id] = True
+		total_likes[answer.id] = answer.total_likes()
+		
+	form = AnswerForm()
+	dynamicform = ReplyForm()
+	if request.method == 'POST':
+		if request.user.is_authenticated:
+			form = AnswerForm(request.POST)
+			dynamicform = ReplyForm(request.POST)
+
+			if form.is_valid() and dynamicform.is_valid():
+				new_form = dynamicform.save(commit=False)
+				new_form.username = request.user
+				new_form.answer = Answer.objects.get(id=pk1)
+				new_form.save()
+				return redirect('/question/'+pk)
+		else:
+			return redirect("/login/?next=/question/"+pk)
+	context = {
+		'title': 'Home',
+		'question': question,
+		'answers': answers,
+		'form': form,
+		'form1': dynamicform,
+		'replydict': replydict,
+		'is_liked': is_liked,
+		'total_likes': total_likes,
+		'get_item': get_item,
+		'reply_answer': Answer.objects.get(id=pk1),
+		'tags': question.tags.all(),
+	}
+	return render(request, 'forum/question_detail_reply.html', context)
 
 @login_required
 def question_create(request, pk):
@@ -96,10 +143,33 @@ def question_create(request, pk):
 			new_form = form.save(commit=False)
 			new_form.username = request.user
 			new_form.community = Community.objects.get(id=pk)
+			if new_form.add_new_tag!=None:
+				Tag.objects.create(name=new_form.add_new_tag)			
 			new_form.save()
+			form.save_m2m()
 			return redirect('/community/'+pk)
 	context = {'title': 'Ask question', 'form': form}
 	return render(request, 'forum/question_create.html', context)
+
+@login_required
+def question_edit(request, pk):
+	question = Question.objects.get(id=pk)
+	form = QuestionForm(request.POST or None, instance=question)
+	if form.is_valid():
+		form.save()
+		return redirect('/question/'+pk)
+	context = {'title': 'Edit Question', 'form': form}
+	return render(request, 'forum/question_edit.html', context)
+
+@login_required
+def answer_edit(request, pk):
+	answer = Answer.objects.get(id=pk)
+	form = AnswerForm(request.POST or None, instance=answer)
+	if form.is_valid():
+		form.save()
+		return redirect('/question/'+str(answer.question.id))
+	context = {'title': 'Edit Answer', 'form': form}
+	return render(request, 'forum/answer_edit.html', context)
 
 def community_detail(request, pk):
 	community = Community.objects.get(id=pk)
@@ -152,30 +222,94 @@ def community_create(request):
 	context = {'title': 'Create Community', 'form': form}
 	return render(request, 'forum/community_create.html', context)
 
-@login_required
-def upvote(request, pk, pk1):
-	hold = Upvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).count()
-	mike = Downvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).count()
-	if hold==1 and mike==0:
-		messages.warning(request, f'You have already upvoted the answer')
-	elif hold==0 and mike==0:
-		Upvote.objects.create(username=request.user, answer=Answer.objects.get(id=pk))
-		messages.success(request, f'You have upvoted the answer')
-	elif hold==0 and mike==1:
-		Downvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).delete()
-		messages.success(request, f'You have upvoted the answer')
-	return redirect('/question/'+pk1)
+
+def like_answer(request):
+	answer = Answer.objects.get(id=request.POST.get('id'))
+	is_liked = {}
+	total_likes = {}
+	is_liked[answer.id] = False
+	if answer.likes.filter(id=request.user.id).exists():
+		answer.likes.remove(request.user)
+		is_liked[answer.id] = False
+	else:
+		answer.likes.add(request.user)
+		is_liked[answer.id] = True
+	total_likes[answer.id] = answer.total_likes()
+	context = {
+		'answer': answer,
+		'is_liked': is_liked,
+		'total_likes': total_likes,
+	}
+	if request.is_ajax():
+		html = render_to_string('forum/like_section.html', context, request=request)
+		return JsonResponse({'form': html})
 
 @login_required
-def downvote(request, pk, pk1):
-	hold = Downvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).count()
-	mike = Upvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).count()
-	if hold==1 and mike==0:
-		messages.warning(request, f'You have already downvoted the answer')
-	elif hold==0 and mike==0:
-		Downvote.objects.create(username=request.user, answer=Answer.objects.get(id=pk))
-		messages.success(request, f'You have downvoted the answer')
-	elif hold==0 and mike==1:
-		Upvote.objects.filter(username=request.user, answer=Answer.objects.get(id=pk)).delete()
-		messages.success(request, f'You have downvoted the answer')
-	return redirect('/question/'+pk1)
+def reportqtest(request, pk):
+	question = Question.objects.get(id=pk)
+	if request.user==question.username:
+		messages.warning(request, f'You cannot report your question')
+		return redirect("/question/"+pk)
+	if ReportQ.objects.filter(question=question, username=request.user).count():
+		messages.warning(request, f'You have already reported this question')
+		return redirect("/question/"+pk)
+	else:
+		return redirect("/reportq/"+pk)
+
+@login_required
+def reportq(request, pk):
+	question = Question.objects.get(id=pk)
+	form = ReportQForm()
+	if request.method == 'POST':
+		form = ReportQForm(request.POST)
+		if form.is_valid():
+			new_form = form.save(commit=False)
+			new_form.username = request.user
+			new_form.question = question
+			new_form.save()
+			messages.success(request, f'Your reponse has been recorded')
+			return redirect("/question/"+pk)
+	context = {'title': 'Report Question', 'question': question, 'form': form}
+	return render(request, 'forum/reportq.html', context)
+
+@login_required
+def reportatest(request, pk):
+	answer = Answer.objects.get(id=pk)
+	if request.user==answer.username:
+		messages.warning(request, f'You cannot report your answer')
+		return redirect("/question/"+str(answer.question.id))
+	if ReportA.objects.filter(answer=answer, username=request.user).count():
+		messages.warning(request, f'You have already reported this answer')
+		return redirect("/question/"+str(answer.question.id))
+	else:
+		return redirect("/reporta/"+pk)
+
+@login_required
+def reporta(request, pk):
+	answer = Answer.objects.get(id=pk)
+	form = ReportAForm()
+	if request.method == 'POST':
+		form = ReportAForm(request.POST)
+		if form.is_valid():
+			new_form = form.save(commit=False)
+			new_form.username = request.user
+			new_form.answer = answer
+			new_form.save()
+			messages.success(request, f'Your reponse has been recorded')
+			return redirect("/question/"+str(answer.question.id))
+	context = {'title': 'Report Answer', 'answer': answer, 'form': form}
+	return render(request, 'forum/reporta.html', context)
+
+def tag_detail(request, pk):
+	tag = Tag.objects.filter(name=pk)[0]
+	questions = Question.objects.all()
+	tag_questions = Question.objects.none()
+	for question in questions:
+		q = Question.objects.filter(id=question.id)
+		if question.tags.filter(name=pk).exists():
+			tag_questions = q | tag_questions
+		if question.add_new_tag == pk:
+			tag_questions = q | tag_questions
+
+	context = {'title': 'Tag Filter', 'questions': tag_questions, 'tag': tag}
+	return render(request, 'forum/tag_questions.html', context)	

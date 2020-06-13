@@ -1,5 +1,6 @@
 {% extends 'forum/base.html' %}
 {% load crispy_forms_tags %}
+
 {% block content %}
 <h1>Question</h1>
 <article class="media content-section md-5">
@@ -7,11 +8,25 @@
 	<div class="media-body">
 		<div class="article-metadata">
 			<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
-			<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+			<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>&nbsp;&nbsp;
+			<small><a class="btn btn-sm btn-warning" href="{% url 'question_edit' question.id %}">Edit</a></small>
 		</div>
 		<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
-		<p class="article-content">{{ question.desc }}</p>
+		<p class="article-content"><div class="content-markdown">{{ question.desc|safe }}</div></p>
+
+		<div>
+			Related Tags : &nbsp;
+			{% for tag in tags %}
+				<small><a style="color: blue;" href="{% url 'tag_detail' tag.name %}">{{ tag.name }}</a></small>&nbsp;
+			{% endfor %}
+
+			{% if question.add_new_tag %}
+				<small><a style="color: blue;" href="{% url 'tag_detail' question.add_new_tag %}">{{question.add_new_tag}}</a></small>
+			{% endif %}
+		</div>
+
 		<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
+		<small style="float: right;"><a style="color: blue;" href="{% url 'reportqtest' question.id %}"><i class="fas fa-flag-checkered"></i> Report</a></small>
 	</div>
 </article>
 
@@ -20,6 +35,7 @@
 		{% csrf_token %}
 		<fieldset class="form-group">
 			<legend class="boreder-bottom mb-4">Leave an answer</legend>
+				{{ form.media }}
 				{{ form|crispy }}	
 		</fieldset>
 		<div class="form-group">
@@ -28,26 +44,35 @@
 	</form>
 </div>
 
-	{% if answers %}
-		{% for ran in answers %}
-		{% for answer in ran %}
-			<article class="media content-section">
-				<img class="rounded-circle article-img" src="{{ answer.username.profile.image.url }}">
-				<div class="media-body">
-					<div class="article-metadata">
-						<p class="mr-4">{{ answer.username }}
-						<small class="text-muted">
-							{{ answer.date_answered|date:"F d, Y" }}
-						</small></p>
-					</div>
-					<p class="article-content">{{ answer.desc|linebreaks }}</p>
-					<a href="{% url 'upvote' answer.id question.id %}"><i class="fas fa-thumbs-up"></i></a>  {{ vote|get_item:answer.id }}  <a href="{% url 'downvote' answer.id question.id %}"><i class="fas fa-thumbs-down"></i></a>
+{% if answers %}
+	{% for answer in answers %}
+		<article class="media content-section">
+			<img class="rounded-circle article-img" src="{{ answer.username.profile.image.url }}">
+			<div class="media-body">
+				<div class="article-metadata">
+					<p class="mr-4">{{ answer.username }}&nbsp;&nbsp;
+					<small class="text-muted">{{ answer.date_answered|date:"F d, Y" }}&nbsp;&nbsp;</small>
+					<small><a class="btn btn-sm btn-warning" href="{% url 'answer_edit' answer.id %}">Edit</a></small></p>
 				</div>
-			</article>
+				<p class="article-content content-markdown">{{ answer.desc|safe }}</p>
+				
+				<div id='like-section{{answer.id}}'>
+					{% include 'forum/like_section.html' %}
+				</div>
+
+				<small style="float: right;"><a style="color: blue;" href="{% url 'question_detail_reply' question.id answer.id %}"><i class="fas fa-reply"></i> Reply</a></small>				
+
+				<small style="float: right;"><a style="color: blue;" href="{% url 'reportatest' answer.id %}"><i class="fas fa-flag-checkered"></i> Report&nbsp;&nbsp;&nbsp;</a></small>
+			</div>
+		</article>
+		{% for temp in replydict|get_item:answer.id %}
+			<div class="content-section">
+				{{ temp.desc }}
+			</div>
 		{% endfor %}
-		{% endfor %}
-	{% else %}
-		<h5>No answers yet!</h5><br>
-	{% endif %}
+	{% endfor %}
+{% else %}
+	<h5>No answers yet!</h5><br>
+{% endif %}
 
 {% endblock content %}

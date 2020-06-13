@@ -1,0 +1,25 @@
+{% extends 'forum/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1>Filtered Questions by {{tag.name}}</h1>
+
+{% if questions %}
+	{% for question in questions %}
+		<article class="media content-section md-5">
+			<img class="rounded-circle article-img" src="{{ question.username.profile.image.url }}">
+			<div class="media-body">
+				<div class="article-metadata">
+					<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
+					<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+				</div>
+				<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
+				<p class="article-content"><div class="content-markdown">{{ question.desc|safe }}</div></p>
+				<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
+			</div>
+		</article>
+	{% endfor %}
+{% else %}
+	<h5>No questions yet!</h5><br>
+{% endif %}
+
+{% endblock content %}

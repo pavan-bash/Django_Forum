@@ -1,0 +1,17 @@
+{% extends 'forum/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<br>
+<div class="content-section">
+	<form method="POST">
+		{% csrf_token %}
+		<fieldset class="form-group">
+			<legend class="boreder-bottom mb-4">Fill this form</legend>
+				{{ form|crispy }}	
+		</fieldset>
+		<div class="form-group">
+			<input class="btn btn-outline-info" type="submit" name="report" value="Report">
+		</div>
+	</form>
+</div>
+{% endblock content %}

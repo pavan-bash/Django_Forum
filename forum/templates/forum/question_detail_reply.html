@@ -1,0 +1,82 @@
+{% extends 'forum/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1>Question</h1>
+<article class="media content-section md-5">
+	<img class="rounded-circle article-img" src="{{ question.username.profile.image.url }}">
+	<div class="media-body">
+		<div class="article-metadata">
+			<small>Asked by:&nbsp;&nbsp;</small>{{ question.username }}&nbsp;&nbsp;
+			<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
+		</div>
+		<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
+		<p class="article-content"><div class="content-markdown">{{ question.desc|safe }}</div></p>
+		<small>By <a style="color: blue;" href="{% url 'community_detail' question.community.id %}">{{ question.community.name }}</a> Community</small>
+		<small style="float: right;"><a style="color: blue;" href="{% url 'reportqtest' question.id %}"><i class="fas fa-flag-checkered"></i> Report</a></small>
+	</div>
+</article>
+
+<div class="content-section">
+	<form method="POST">
+		{% csrf_token %}
+		<fieldset class="form-group">
+			<legend class="boreder-bottom mb-4">Leave an answer</legend>
+				{{ form|crispy }}
+		</fieldset>
+		<div class="form-group">
+			<input class="btn btn-outline-info" type="submit" value="Post">
+		</div>
+	</form>
+</div>
+
+{% if answers %}
+	{% for answer in answers %}
+		<article class="media content-section">
+			<img class="rounded-circle article-img" src="{{ answer.username.profile.image.url }}">
+			<div class="media-body">
+				<div class="article-metadata">
+					<p class="mr-4">{{ answer.username }}
+					<small class="text-muted">
+						{{ answer.date_answered|date:"F d, Y" }}
+					</small></p>
+				</div>
+				<p class="article-content">{{ answer.desc|safe }}</p>
+				
+				<div id='like-section{{answer.id}}'>
+					{% include 'forum/like_section.html' %}
+				</div>
+
+				<small style="float: right;"><a style="color: blue;" href="{% url 'question_detail_reply' question.id answer.id %}"><i class="fas fa-reply"></i> Reply </a></small>
+
+				<small style="float: right;"><a style="color: blue;" href="{% url 'reportatest' answer.id %}"><i class="fas fa-flag-checkered"></i> Report&nbsp;&nbsp;&nbsp;</a></small>
+			</div>
+		</article>
+
+		{% if answer == reply_answer %}
+			<div class="content-section" id="reply">
+				<form method="POST">
+					{% csrf_token %}
+					<fieldset class="form-group">
+						<legend class="boreder-bottom mb-4">Reply</legend>
+							{{ form.media }}
+							{{ form1|crispy }}	
+					</fieldset>
+					<div class="form-group">
+						<input class="btn btn-outline-info" type="submit" name="reply" value="Reply">
+					</div>
+				</form>
+			</div>
+		{% endif %}
+
+		{% for temp in replydict|get_item:answer.id %}
+			<div class="content-section">
+				{{ temp.desc }}
+			</div>
+		{% endfor %}
+
+	{% endfor %}
+{% else %}
+	<h5>No answers yet!</h5><br>
+{% endif %}
+
+{% endblock content %}

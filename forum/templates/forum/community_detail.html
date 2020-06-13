@@ -1,4 +1,5 @@
 {% extends 'forum/base.html' %}
+
 {% block content %}
 <h1>Community Detail</h1>
 
@@ -9,6 +10,8 @@
 			<div class="article-metadata">
 				<small>Created by:&nbsp;&nbsp;</small>{{ community.username }}&nbsp;&nbsp;
 				<small class="text-muted">{{ community.date_created|date:"F d, Y" }}</small>
+				<!--updated : 
+				<small class="text-muted">{{ community.date_updated }}</small>-->
 			</div>
 			<h2 class="article-title">{{ community.name }}</h2>
 			<p class="article-content">{{ community.desc }}</p>
@@ -29,7 +32,7 @@
 					<small class="text-muted">{{ question.date_asked|date:"F d, Y" }}</small>
 				</div>
 				<a href="{% url 'question_detail' question.id %}"><h2 class="article-title">{{ question.title }}</h2></a>
-				<p class="article-content">{{ question.desc }}</p>
+				<p class="article-content"><div class="content-markdown">{{ question.desc|truncatechars_html:50 }}</div></p>
 			</div>
 		</article>
 	{% endfor %}
